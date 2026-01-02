@@ -9,7 +9,8 @@ WORKDIR /app
 COPY lightrag_webui/ ./lightrag_webui/
 
 # Build frontend assets for inclusion in the API package
-RUN --mount=type=cache,target=/root/.bun/install/cache \
+# FIXED: Added id=bun_cache to satisfy BuildKit requirements
+RUN --mount=type=cache,id=bun_cache,target=/root/.bun/install/cache \
     cd lightrag_webui \
     && bun install --frozen-lockfile \
     && bun run build
@@ -43,7 +44,8 @@ COPY setup.py .
 COPY uv.lock .
 
 # Install base, API, and offline extras without the project to improve caching
-RUN --mount=type=cache,target=/root/.local/share/uv \
+# FIXED: Added id=uv_cache
+RUN --mount=type=cache,id=uv_cache,target=/root/.local/share/uv \
     uv sync --frozen --no-dev --extra api --extra offline --no-install-project --no-editable
 
 # Copy project sources after dependency layer
@@ -53,7 +55,8 @@ COPY lightrag/ ./lightrag/
 COPY --from=frontend-builder /app/lightrag/api/webui ./lightrag/api/webui
 
 # Sync project in non-editable mode and ensure pip is available for runtime installs
-RUN --mount=type=cache,target=/root/.local/share/uv \
+# FIXED: Added id=uv_cache
+RUN --mount=type=cache,id=uv_cache,target=/root/.local/share/uv \
     uv sync --frozen --no-dev --extra api --extra offline --no-editable \
     && /app/.venv/bin/python -m ensurepip --upgrade
 
@@ -86,7 +89,8 @@ ENV PATH=/app/.venv/bin:/root/.local/bin:$PATH
 
 # Install dependencies with uv sync (uses locked versions from uv.lock)
 # And ensure pip is available for runtime installs
-RUN --mount=type=cache,target=/root/.local/share/uv \
+# FIXED: Added id=uv_cache
+RUN --mount=type=cache,id=uv_cache,target=/root/.local/share/uv \
     uv sync --frozen --no-dev --extra api --extra offline --no-editable \
     && /app/.venv/bin/python -m ensurepip --upgrade
 
